@@ -28,12 +28,16 @@ required by the master to retrieve the data
 #include <semphr.h>
 #include <SPI.h>
 
+/*---------------- RTD CONSTANTES -------------------*/
+#define RNOMINAL  100.0
+#define RREF      4300.0
+
 /*---------------- TYPE DEFINITION -------------------*/
 typedef struct {                                      
   uint16_t TensionRedresseur109;                    
   uint16_t TensionRedresseur124;                                  
   uint16_t TensionRedresseur125;                        
-  uint16_t TensionRedresseur126;                                // ETAT DU FOUR//
+  uint16_t TensionRedresseur126;                                // Etat des redresseurs//
   uint16_t TensionRedresseur229; 
   uint16_t TensionVentilation;
   uint16_t TensionPompeFiltration;
@@ -47,11 +51,11 @@ typedef struct {
 int Redresseur109 = I0_0;
 int Redresseur124 = I0_1;
 int Redresseur125 = I0_2;
-int Redresseur126 = I0_3;
+int Redresseur126 = I0_7;
 int Redresseur229 = I0_4;
-int Ventilation = I0_5;
-int Filtration = I0_6;
-int Peroxyde = I1_0;
+int Ventilation = I0_8;
+int Filtration = I0_9;
+int Peroxyde = I0_10;
 
 
 /*---------------- MUTEX -------------------*/
@@ -62,7 +66,7 @@ SemaphoreHandle_t xWiFiSemaphore;
 State Machines_States;
 
 /*---------------- VARIABLES -------------------*/
-Adafruit_MAX31865 TempBassin9 = Adafruit_MAX31865(21);
+Adafruit_MAX31865 TempBassin9 = Adafruit_MAX31865(3);
 Adafruit_MAX31865 TempBassin24 = Adafruit_MAX31865(20);
 Adafruit_MAX31865 TempBassin229 = Adafruit_MAX31865(2);
 
@@ -73,24 +77,42 @@ void Refresh_Data(void *pvParameters );
 /*------------------- SETUP -----------------------*/
 void setup() {
   Serial.begin(9600);                       // Initialisation du moniteur série
+  
   Serial.println(F("Début du Setup..."));
-  TempBassin9.begin(MAX31865_2WIRE);
-  TempBassin24.begin(MAX31865_2WIRE);
-  TempBassin229.begin(MAX31865_2WIRE);
+
+  //*************************** Setup des RTD *************************//
+  TempBassin9.begin(MAX31865_3WIRE);
+  TempBassin24.begin(MAX31865_3WIRE);
+  TempBassin229.begin(MAX31865_3WIRE);
+  
+  
+  //*************************** Setup WiFi Module *************************//
   WifiModule.begin(9600); 
+
+
+  //*************************** Setup SimpleCom *************************//
   SimpleComm.begin();   
-  if ( xWiFiSemaphore == NULL )                                                  // Check to confirm that the Serial Semaphore has not already been created.
-  {
-    xWiFiSemaphore = xSemaphoreCreateMutex();                                    // Create a mutex semaphore we will use to manage the Serial Port
-    if ( ( xWiFiSemaphore ) != NULL )
-      xSemaphoreGive( ( xWiFiSemaphore ) );                                      // Make the Serial Port available for use, by "Giving" the Semaphore.
+
+
+  //*************************** Setup Sémaphore *************************//
+    if ( xWiFiSemaphore == NULL )                                                  // Check to confirm that the Serial Semaphore has not already been created.
+    {
+      xWiFiSemaphore = xSemaphoreCreateMutex();                                    // Create a mutex semaphore we will use to manage the Serial Port
+      if ( ( xWiFiSemaphore ) != NULL )
+        xSemaphoreGive( ( xWiFiSemaphore ) );                                      // Make the Serial Port available for use, by "Giving" the Semaphore.
+    }
+    
+
+
+    //*************************** Setup Task *************************//
+    xTaskCreate(Send_State, "Send_State", 1500, NULL  , 3, NULL);
+    xTaskCreate(Refresh_Data, "Refresh_Data", 1500, NULL, 3, NULL);
+
+
+    //*************************** Fin Setup *************************//
+    delay(5000);
+    Serial.println(F("Setup Executé avec succes..."));
   }
-  /*--- TASKS INITIALISATION ---*/
-  xTaskCreate(Send_State, "Send_State", 1500, NULL  , 3, NULL);
-  xTaskCreate(Refresh_Data, "Refresh_Data", 1500, NULL, 3, NULL);
-  delay(5000);
-  Serial.println(F("Setup Executé avec succes..."));
-}
 
 void loop() {
   // Vide les choses se passent dans les tâches
@@ -99,10 +121,13 @@ void loop() {
 
 /*------------------- Lire la température des RTD -----------------------*/
 void LireTemperatures()
-{
-  Machines_States.TempBass9 = (TempBassin9.temperature(100, RREF) * 1.8) + 32;
-  Machines_States.TempBass24 = (TempBassin24.temperature(100, RREF) * 1.8) +32;
-  Machines_States.TempBass229 = (TempBassin229.temperature(100, RREF) * 1.8) +32;
+  {
+    Machines_States.TempBass9 = (TempBassin9.temperature(RNOMINAL, RREF) * 1.8) + 32;
+    Machines_States.TempBass24 = (TempBassin24.temperature(RNOMINAL, RREF) * 1.8) +32;
+    Machines_States.TempBass229 = (TempBassin229.temperature(RNOMINAL, RREF) * 1.8) +32;
+    Serial.println(Machines_States.TempBass9);
+    Serial.println(Machines_States.TempBass24);
+    Serial.println(Machines_States.TempBass229);
   }
 
 
@@ -112,7 +137,7 @@ void Refresh_Data(void *pvParameters )
   (void) pvParameters;
   for (;;)
   {
-    if ( xSemaphoreTake( xWiFiSemaphore, ( TickType_t ) 5 ) == pdTRUE ){
+   // if ( xSemaphoreTake( xWiFiSemaphore, ( TickType_t ) 5 ) == pdTRUE ){
       Machines_States.TensionRedresseur109 = digitalRead(Redresseur109); 
       Machines_States.TensionRedresseur124 = digitalRead(Redresseur124); 
       Machines_States.TensionRedresseur125 = digitalRead(Redresseur125);
@@ -121,9 +146,9 @@ void Refresh_Data(void *pvParameters )
       Machines_States.TensionPompeFiltration = digitalRead(Filtration);
       Machines_States.TensionVentilation = digitalRead(Ventilation);
       Machines_States.TensionPompePeroxyde = digitalRead(Peroxyde);
-      xSemaphoreGive( xWiFiSemaphore );
-      }
       LireTemperatures();
+     // xSemaphoreGive( xWiFiSemaphore );
+      //}
       vTaskDelay(500 / portTICK_PERIOD_MS);                           // one tick delay (15ms) 35 = 500ms
   }
 }
@@ -133,13 +158,28 @@ void Refresh_Data(void *pvParameters )
 /*------------------- Send_State DATA(TASK) -----------------------*/
 void Send_State( void *pvParameters )
 {
+  
     for(;;){
     SimplePacket packet;
-    if ( xSemaphoreTake( xWiFiSemaphore, ( TickType_t ) 5 ) == pdTRUE ){
-      packet.setData(&Machines_States, sizeof(Machines_States));                                            // Create packet from data
-      SimpleComm.send(WifiModule, packet, 0);                                          // Send Packet                               
-      xSemaphoreGive( xWiFiSemaphore );                                                 // Now free or "Give" the WiFi Port for others.
-      }
+    State state;
+      state.TensionRedresseur109 = Machines_States.TensionRedresseur109; 
+      state.TensionRedresseur124 = Machines_States.TensionRedresseur124; 
+      state.TensionRedresseur125 = Machines_States.TensionRedresseur125;
+      state.TensionRedresseur126 = Machines_States.TensionRedresseur126;
+      state.TensionRedresseur229 = Machines_States.TensionRedresseur229;
+      state.TensionPompeFiltration = Machines_States.TensionPompeFiltration;
+      state.TensionVentilation = Machines_States.TensionVentilation;
+      state.TensionPompePeroxyde = Machines_States.TensionPompePeroxyde;
+      state.TempBass9 = Machines_States.TempBass9;
+      state.TempBass24 = Machines_States.TempBass24;
+      state.TempBass229 = Machines_States.TempBass229;
+    //if ( xSemaphoreTake( xWiFiSemaphore, ( TickType_t ) 5 ) == pdTRUE ){
+      packet.setData(&state, sizeof(state));                                            // Create packet from data
+      if (!SimpleComm.send(WifiModule, packet, 0)) {
+      Serial.println("Send packet error");
+    }                               
+     //xSemaphoreGive( xWiFiSemaphore );                                                 // Now free or "Give" the WiFi Port for others.
+      //}
     vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
