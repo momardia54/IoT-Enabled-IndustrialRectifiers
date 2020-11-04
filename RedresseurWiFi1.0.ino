@@ -28,8 +28,8 @@ SimplePacket packet;
 ModbusIP mb;                                                            // Etats et commandes du four
 
 /*------------------- Tasks ------------------------*/
-TaskHandle_t TaskReceive_State;                                          // Receive the state of the oven from the main module
-TaskHandle_t TaskModbus_WiFi;                                            // Communicate Modbus with the server and send the Command to the main board
+TaskHandle_t TaskReceive_State;                                          // Receive the data from the main module
+TaskHandle_t TaskModbus_WiFi;                                            // Communicate Modbus with the server
 TaskHandle_t TaskCheck_WiFi;                                             // Check the status of the WiFi connection. If not connecter, try to reconnect it
 
 
@@ -137,7 +137,8 @@ void Receive_State( void * pvParameters ){
     //taskDISABLE_INTERRUPTS();
     Serial.println(F("                                                              Receive_State"));
      
-          if (SimpleComm.receive(Serial2, packet)) {                                    
+          if (SimpleComm.receive(Serial2, packet)) {            
+              Serial.println("Packet recu");                        
              const State *state = (const State *) packet.getData();
             if (state != nullptr) {
                 mb.Hreg(TensionRed109, state->TensionRedresseur109);
@@ -152,13 +153,17 @@ void Receive_State( void * pvParameters ){
                 mb.Hreg(TempBassin24, state->TempBass24);
                 mb.Hreg(TempBassin229, state->TempBass229);
                 // Print received data
-                Serial.print("  temp ");
+                Serial.println(mb.Hreg(TensionRed109));
+                Serial.println(mb.Hreg(TempBassin9));
+                Serial.println(mb.Hreg(TempBassin24));
+                Serial.println(mb.Hreg(TempBassin229));
+                Serial.println(WiFi.localIP());
             }
             
             
           }
      // taskENABLE_INTERRUPTS();
-      vTaskDelay(900 / portTICK_PERIOD_MS);
+      vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 
 }
@@ -173,12 +178,12 @@ void Receive_State( void * pvParameters ){
 void Check_WiFi( void * pvParameters ){
   
   for(;;){
-      Serial.println("                                                              Check_WiFi");
+      Serial.println("                           Check_WiFi");
       if (WiFi.status() != WL_CONNECTED) {
           Serial.println(F(" Wifi Not connected "));
           ESP.restart();
           }                
-    vTaskDelay(60000 / portTICK_PERIOD_MS);                                               // délais d'execution 10min
+    vTaskDelay(6000 / portTICK_PERIOD_MS);                                               // délais d'execution 10min
     }
 }
 
