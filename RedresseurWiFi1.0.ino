@@ -2,8 +2,7 @@
  * Autheur :           Momar DIA
  * Date:               2020/09/20
  * Modified:           .
- * Company:            Tecnickrome Aeronautique Inc
- * License:            Ce programme est la propriété intellectuelle de Tecnickrome Aéronautique Inc et en aucun cas ne peut être dupliqué ni réutiliser sans autorisation.
+ * License:            Ce programme est la propriété intellectuelle de Momar DIA Étudiant de la faculté de science de l'université de sherbrooke et en aucun cas ne peut être dupliqué ni réutiliser sans son autorisation.
  * Description:        Ce programme permet la communication en WiFi avec le serveur. Il reçoit le statut des redresseurs et transfère l'information au Scada.
  *                     Ce programme ne permet aucune commande puisque la description du projet fait abstraction de cette partie
 
@@ -16,29 +15,23 @@ required by the master to retrieve the data
 */
 
 
-/*---------------- BIBLIOTHEQUES -------------------*/
-#include <ModbusIP_ESP32.h>
-#include <SimpleComm.h>
+#include <ModbusIP.h>
+#include <Comm.h>
 #include <Modbus.h>
 #include <WiFi.h>
 
-/*---------------- VARIABLES -------------------*/
-const uint16_t FAULT = 4000;                                            // Command value to replace de NULL Value cause Simple comme does not accept NULL and replace it with 0
-SimplePacket packet;
-ModbusIP mb;                                                            // Etats et commandes du four
 
-/*------------------- Tasks ------------------------*/
-TaskHandle_t TaskReceive_State;                                          // Receive the data from the main module
-TaskHandle_t TaskModbus_WiFi;                                            // Communicate Modbus with the server
-TaskHandle_t TaskCheck_WiFi;                                             // Check the status of the WiFi connection. If not connecter, try to reconnect it
+const uint16_t FAULT = 4;                                           
+ModbusIP mb;                                                          
 
 
-/*---------------- TYPE DEFINITION -------------------*/
+
+
 typedef struct {                                      
   uint16_t TensionRedresseur109;                    
   uint16_t TensionRedresseur124;                                  
   uint16_t TensionRedresseur125;                        
-  uint16_t TensionRedresseur126;                                // ETAT DU FOUR//
+  uint16_t TensionRedresseur126;                              
   uint16_t TensionRedresseur229; 
   uint16_t TensionVentilation;
   uint16_t TensionPompeFiltration;
@@ -48,13 +41,6 @@ typedef struct {
   uint16_t TempBass229;                        
 } State;
 
-
-// C'est le mapping des holding registers dans le scada en commençant par 0
-// Certains Scada commencent pas 1 donc être attentif en conséquence 
-/*------------------- Indexs -----------------------*/
-// IO for read and write 
-// I for write 
-// O for Read
   const int TensionRed109 = 0;
   const int TensionRed124 = 1;
   const int TensionRed125 = 2;
@@ -70,19 +56,18 @@ typedef struct {
   
 
 void setup() {
-  delay(10000);
-  Serial.begin(9600);                                                           // Initialize serial for debugging
-  Serial2.begin(9600);                                                          // Initialize serial 2 for com with main board
-  SimpleComm.begin();                                                           // Initialize com protocol with main board
-  Serial.println(F("esp32 started"));
-  mb.config("IOT", "");                                      // configuration du modbus et connection au WiFi
-  delay(5000);
-  /*--- Modbus INITIALISATION ---*/
+  delay(100);
+  Serial.begin(600);                                                           
+  Serial7.begin(600);                                                     
+  Comm.begin();                                                     
+  Serial.println(F(" started"));
+  mb.config("IOT", "");                                 
+  delay(50);
   mb.addHreg(TensionRed109, FAULT);
   mb.addHreg(TensionRed124, FAULT);
   mb.addHreg(TensionRed125, FAULT);
   mb.addHreg(TensionRed126, FAULT);
-  mb.addHreg(TensionRed229, FAULT);
+  mb.addHreg(TensionRed229, FAULT;
   mb.addHreg(TensionVent, FAULT);
   mb.addHreg(TensionFiltration, FAULT);
   mb.addHreg(TensionPeroxyde, FAULT);
@@ -91,55 +76,52 @@ void setup() {
   mb.addHreg(TempBassin229, FAULT);
 
 
-  /*--- TASK INITIALISATION ---*/
-  xTaskCreatePinnedToCore(
-             Modbus_WiFi,  /* Task function. */
-             "TaskModbus_WiFi",    /* name of task. */
-             50000,      /* Stack size of task */
-             NULL,       /* parameter of the task */
-             2,          /* priority of the task */
-             &TaskModbus_WiFi,     /* Task handle to keep track of created task */
-             1);         /* pin task to core 0 */
+ 
+  xTaskCreateTask(
+             Modbus_WiFi, 
+             "TaskModbus_WiFi",    
+             50,    
+             NULL,       
+             2,       
+             &TaskModbus_WiFi,     
+             1);    
 
 
-  xTaskCreatePinnedToCore(
-             Check_WiFi,  /* Task function. */
-             "Check_WiFi",    /* name of task. */
-             10000,      /* Stack size of task */
-             NULL,       /* parameter of the task */
-             3,          /* priority of the task */
-             &TaskCheck_WiFi,     /* Task handle to keep track of created task */
-             1);         /* pin task to core 0 */
+  xTaskCreateTas(
+             Check_WiFi,
+             "Check_WiFi",  
+             10000,   
+             NULL,     
+             3,    
+             &TaskCheck_WiFi,  
+             1); 
 
 
-  xTaskCreatePinnedToCore(
-             Receive_State,  /* Task function. */
-             "Receive_State",    /* name of task. */
-             10000,      /* Stack size of task */
-             NULL,       /* parameter of the task */
-             3,          /* priority of the task */
-             &TaskReceive_State,     /* Task handle to keep track of created task */
-             0);         /* pin task to core 0 */
+  xTaskCreateTas(
+             Receive_State, 
+             "Receive_State",  
+             10000,     
+             NULL,    
+             3,  
+             &TaskReceive_State,   
+             0);        
 Serial.println(F("Setup Successful !! "));
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+ 
 }
 
-
-/*------------------- Receive State from main module(TASK) -----------------------*/
 void Receive_State( void * pvParameters ){
   
   for(;;)
   {
-    //taskDISABLE_INTERRUPTS();
-    Serial.println(F("                                                              Receive_State"));
+
+    Serial.println(F("                       
      
-          if (SimpleComm.receive(Serial2, packet)) {            
+          if (Comm.receive(Serial2, packet)) {            
               Serial.println("Packet recu");                        
-             const State *state = (const State *) packet.getData();
             if (state != nullptr) {
                 mb.Hreg(TensionRed109, state->TensionRedresseur109);
                 mb.Hreg(TensionRed124, state->TensionRedresseur124);
@@ -152,7 +134,6 @@ void Receive_State( void * pvParameters ){
                 mb.Hreg(TempBassin9, state->TempBass9);
                 mb.Hreg(TempBassin24, state->TempBass24);
                 mb.Hreg(TempBassin229, state->TempBass229);
-                // Print received data
                 Serial.println(mb.Hreg(TensionRed109));
                 Serial.println(mb.Hreg(TempBassin9));
                 Serial.println(mb.Hreg(TempBassin24));
@@ -162,8 +143,7 @@ void Receive_State( void * pvParameters ){
             
             
           }
-     // taskENABLE_INTERRUPTS();
-      vTaskDelay(500 / portTICK_PERIOD_MS);
+      vTaskDelay(5 / portTICK_PERIOD_MS);
     }
 
 }
@@ -171,38 +151,28 @@ void Receive_State( void * pvParameters ){
 
 
 
-
-
-
-/*------------------- Check Wifi Connection(TASK) -----------------------*/
 void Check_WiFi( void * pvParameters ){
   
   for(;;){
-      Serial.println("                           Check_WiFi");
       if (WiFi.status() != WL_CONNECTED) {
           Serial.println(F(" Wifi Not connected "));
-          ESP.restart();
+          restart();
           }                
-    vTaskDelay(6000 / portTICK_PERIOD_MS);                                               // délais d'execution 10min
+    vTaskDelay(60 / portTICK_PERIOD_MS);                                         
     }
 }
 
 
 
-
-
-/*------------------- Communicate modbus with the server(TASK) -----------------------*/
 void Modbus_WiFi( void * pvParameters ){
   for(;;)
   {
     
-      //taskDISABLE_INTERRUPTS();
-      Serial.println(F("                                                              Modbus_WiFi"));
       Serial.println(xPortGetFreeHeapSize());
-      mb.task();                                                                          // Where the Magic modbus happens
+      mb.task();                                                           
       delay(50);
       //taskENABLE_INTERRUPTS();
-      vTaskDelay(1000 / portTICK_PERIOD_MS);                     // délais d'execution
+      vTaskDelay(1000 / portTICK_PERIOD_MS);             
       
   }
 }
