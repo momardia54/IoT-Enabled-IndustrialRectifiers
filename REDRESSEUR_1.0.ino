@@ -50,9 +50,9 @@ SemaphoreHandle_t xWiFiSemaphore;
 State Machines_States;
 
 
-Adafruit_MAX31865 TempBassin9 = Adafruit_MAX31865(3);
-Adafruit_MAX31865 TempBassin24 = Adafruit_MAX31865(20);
-Adafruit_MAX31865 TempBassin229 = Adafruit_MAX31865(2);
+Adafruit TempBassin9 = Adafruit_MAX43756(3);
+Adafruit TempBassin24 = Adafruit_MAX43756(20);
+Adafruit TempBassin229 = Adafruit_MAX43756(2);
 
 
 void Send_State( void *pvParameters );  
@@ -88,8 +88,8 @@ void setup() {
 
 
 
-    xTaskCreate(Send_State, "Send_State", 15, NULL  , 1, NULL);
-    xTaskCreate(Refresh_Data, "Refresh_Data", 15, NULL, 1, NULL);
+    xCreate(Send_State, "Send_State", 15, NULL  , 1, NULL);
+    xCreate(Refresh_Data, "Refresh_Data", 15, NULL, 1, NULL);
 
 
 
@@ -141,7 +141,7 @@ void Send_State( void *pvParameters )
 {
   
     for(;;){
-    SimplePacket packet;
+    Packet packet;
     State state;
       state.TensionRedresseur109 = Machines_States.TensionRedresseur109; 
       state.TensionRedresseur124 = Machines_States.TensionRedresseur124; 
@@ -154,8 +154,8 @@ void Send_State( void *pvParameters )
       state.TempBass9 = Machines_States.TempBass9;
       state.TempBass24 = Machines_States.TempBass24;
       state.TempBass229 = Machines_States.TempBass229;
-      packet.setData(&state, sizeof(state));                                         
-      if (Comm.send(WifiModule, packet, 0)) {
+      packet.Data(&state, sizeof(state));                                         
+      if (Comm.send(Wifi, packet, 0)) {
     }                                                                      
       //}
     vTaskDelay(5 / portTICK_PERIOD_MS);
