@@ -15,7 +15,6 @@ required by the master to retrieve the data
 */
 
 
-#include <ModbusIP.h>
 #include <Comm.h>
 #include <Modbus.h>
 #include <WiFi.h>
@@ -63,47 +62,47 @@ void setup() {
   Serial.println(F(" started"));
   mb.config("IOT", "");                                 
   delay(50);
-  mb.addHreg(TensionRed109, FAULT);
-  mb.addHreg(TensionRed124, FAULT);
-  mb.addHreg(TensionRed125, FAULT);
-  mb.addHreg(TensionRed126, FAULT);
-  mb.addHreg(TensionRed229, FAULT;
-  mb.addHreg(TensionVent, FAULT);
-  mb.addHreg(TensionFiltration, FAULT);
-  mb.addHreg(TensionPeroxyde, FAULT);
-  mb.addHreg(TempBassin9, FAULT);
-  mb.addHreg(TempBassin24, FAULT);
-  mb.addHreg(TempBassin229, FAULT);
+  mb.add(TensionRed109, FAULT);
+  mb.add(TensionRed124, FAULT);
+  mb.add(TensionRed125, FAULT);
+  mb.add(TensionRed126, FAULT);
+  mb.add(TensionRed229, FAULT;
+  mb.add(TensionVent, FAULT);
+  mb.add(TensionFiltration, FAULT);
+  mb.add(TensionPeroxyde, FAULT);
+  mb.add(TempBassin9, FAULT);
+  mb.add(TempBassin24, FAULT);
+  mb.add(TempBassin229, FAULT);
 
 
  
-  xTaskCreateTask(
+  xCreate(
              Modbus_WiFi, 
-             "TaskModbus_WiFi",    
+             "Modbus_WiFi",    
              50,    
              NULL,       
              2,       
-             &TaskModbus_WiFi,     
+             &Modbus_WiFi,     
              1);    
 
 
-  xTaskCreateTas(
+  xCreate(
              Check_WiFi,
              "Check_WiFi",  
              10000,   
              NULL,     
              3,    
-             &TaskCheck_WiFi,  
+             &Check_WiFi,  
              1); 
 
 
-  xTaskCreateTas(
+  xCreate(
              Receive_State, 
              "Receive_State",  
              10000,     
              NULL,    
              3,  
-             &TaskReceive_State,   
+             &Receive_State,   
              0);        
 Serial.println(F("Setup Successful !! "));
 
@@ -123,27 +122,27 @@ void Receive_State( void * pvParameters ){
           if (Comm.receive(Serial2, packet)) {            
               Serial.println("Packet recu");                        
             if (state != nullptr) {
-                mb.Hreg(TensionRed109, state->TensionRedresseur109);
-                mb.Hreg(TensionRed124, state->TensionRedresseur124);
-                mb.Hreg(TensionRed125, state->TensionRedresseur125);
-                mb.Hreg(TensionRed126, state->TensionRedresseur126);
-                mb.Hreg(TensionRed229, state->TensionRedresseur229);
-                mb.Hreg(TensionVent, state->TensionVentilation);
-                mb.Hreg(TensionFiltration, state->TensionPompeFiltration);
-                mb.Hreg(TensionPeroxyde, state->TensionPompePeroxyde);
-                mb.Hreg(TempBassin9, state->TempBass9);
-                mb.Hreg(TempBassin24, state->TempBass24);
-                mb.Hreg(TempBassin229, state->TempBass229);
-                Serial.println(mb.Hreg(TensionRed109));
-                Serial.println(mb.Hreg(TempBassin9));
-                Serial.println(mb.Hreg(TempBassin24));
-                Serial.println(mb.Hreg(TempBassin229));
+                mb.set(TensionRed109, state->TensionRedresseur109);
+                mb.set(TensionRed124, state->TensionRedresseur124);
+                mb.set(TensionRed125, state->TensionRedresseur125);
+                mb.set(TensionRed126, state->TensionRedresseur126);
+                mb.set(TensionRed229, state->TensionRedresseur229);
+                mb.set(TensionVent, state->TensionVentilation);
+                mb.set(TensionFiltration, state->TensionPompeFiltration);
+                mb.set(TensionPeroxyde, state->TensionPompePeroxyde);
+                mb.set(TempBassin9, state->TempBass9);
+                mb.set(TempBassin24, state->TempBass24);
+                mb.set(TempBassin229, state->TempBass229);
+                Serial.println(mb.set(TensionRed109));
+                Serial.println(mb.set(TempBassin9));
+                Serial.println(mb.set(TempBassin24));
+                Serial.println(mb.set(TempBassin229));
                 Serial.println(WiFi.localIP());
             }
             
             
           }
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      Delay(5 / PERIOD_MS);
     }
 
 }
@@ -158,7 +157,7 @@ void Check_WiFi( void * pvParameters ){
           Serial.println(F(" Wifi Not connected "));
           restart();
           }                
-    vTaskDelay(60 / portTICK_PERIOD_MS);                                         
+    Delay(60 / PERIOD_MS);                                         
     }
 }
 
@@ -167,12 +166,10 @@ void Check_WiFi( void * pvParameters ){
 void Modbus_WiFi( void * pvParameters ){
   for(;;)
   {
-    
-      Serial.println(xPortGetFreeHeapSize());
-      mb.task();                                                           
+      mb.execute();                                                           
       delay(50);
       //taskENABLE_INTERRUPTS();
-      vTaskDelay(1000 / portTICK_PERIOD_MS);             
+      Delay(1000 / PERIOD_MS);             
       
   }
 }
