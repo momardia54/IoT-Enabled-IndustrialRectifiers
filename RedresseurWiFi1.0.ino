@@ -2,7 +2,7 @@
  * Autheur :           Momar DIA
  * Date:               2020/09/20
  * Modified:           .
- * License:            Ce programme est la propriété intellectuelle de Momar DIA Étudiant de la faculté de science de l'université de sherbrooke et en aucun cas ne peut être dupliqué ni réutiliser sans son autorisation.
+ * License:            Ce programme est la propriété intellectuelle de Momar DIA Étudiant de la faculté de génie de l'université de sherbrooke et en aucun cas ne peut être dupliqué ni réutiliser sans son autorisation.
  * Description:        Ce programme permet la communication en WiFi avec le serveur. Il reçoit le statut des redresseurs et transfère l'information au Scada.
  *                     Ce programme ne permet aucune commande puisque la description du projet fait abstraction de cette partie
 
